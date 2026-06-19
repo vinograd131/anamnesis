@@ -1,0 +1,13 @@
+{
+  "model": "rubioroberta_ft",
+  "search": "optuna_tpe",
+  "best_macro_f1_dev": 0.863,
+  "max_length_search": 128,
+  "best_params": {
+    "learning_rate": 0.0004939977445894489,
+    "epochs": 8,
+    "batch_size": 8,
+    "weight_decay": 0.08187605254258956,
+    "warmup_ratio": 0.02346078831477152
+  }
+}
