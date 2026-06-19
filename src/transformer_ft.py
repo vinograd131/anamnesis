@@ -12,6 +12,7 @@ from transformers import (
     AutoTokenizer,
     EarlyStoppingCallback,
     Trainer,
+    TrainerCallback,
     TrainingArguments,
 )
 
@@ -55,6 +56,20 @@ class WeightedTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
+class OptunaPruningCallback(TrainerCallback):
+    def __init__(self, trial):
+        self.trial = trial
+        self.epoch = 0
+
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        import optuna
+
+        self.trial.report(metrics["eval_macro_f1"], step=self.epoch)
+        self.epoch += 1
+        if self.trial.should_prune():
+            raise optuna.TrialPruned()
+
+
 def compute_metrics(pred):
     y_pred = pred.predictions.argmax(-1)
     y_true = pred.label_ids
@@ -64,7 +79,7 @@ def compute_metrics(pred):
     }
 
 
-def encode(tokenizer, texts, max_length=256):
+def encode(tokenizer, texts, max_length=128):
     return tokenizer(texts, padding=True, truncation=True, max_length=max_length, return_tensors="pt")
 
 
@@ -87,7 +102,7 @@ def build_model(use_lora: bool):
     return model
 
 
-def prepare(eval_split, tokenizer, max_length=256):
+def prepare(eval_split, tokenizer, max_length=128):
     x_train, y_train = load_xy("train")
     x_eval, y_eval = load_xy(eval_split)
     y_train = [LABEL2ID[y] for y in y_train]
@@ -109,6 +124,7 @@ def train_once(
     patience=2,
     output_dir="outputs/ft",
     save=False,
+    trial=None,
 ):
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     train_ds, eval_ds, class_weights = prepare(eval_split, tokenizer)
@@ -134,6 +150,10 @@ def train_once(
         seed=SEED,
         fp16=torch.cuda.is_available(),
     )
+    callbacks = [EarlyStoppingCallback(early_stopping_patience=patience)]
+    if trial is not None:
+        callbacks.append(OptunaPruningCallback(trial))
+
     trainer = WeightedTrainer(
         class_weights=class_weights,
         model=build_model(use_lora),
@@ -141,7 +161,7 @@ def train_once(
         train_dataset=train_ds,
         eval_dataset=eval_ds,
         compute_metrics=compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=patience)],
+        callbacks=callbacks,
     )
     trainer.train()
     metrics = trainer.evaluate()
@@ -170,9 +190,11 @@ def run_optuna(n_trials=20, eval_split="dev", use_lora=True):
             weight_decay=trial.suggest_float("weight_decay", 0.0, 0.1),
             warmup_ratio=trial.suggest_float("warmup_ratio", 0.0, 0.2),
             output_dir=f"outputs/trial_{trial.number}",
+            trial=trial,
         )
 
-    study = optuna.create_study(direction="maximize")
+    pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=2)
+    study = optuna.create_study(direction="maximize", pruner=pruner)
     study.optimize(objective, n_trials=n_trials)
     print("best macro_f1:", study.best_value)
     print("best params:", study.best_params)
