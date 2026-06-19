@@ -24,7 +24,7 @@
 | CatBoost на fastText | 0.839 | 0.828 |
 | fastText + LogReg | 0.833 | 0.822 |
 | RuBioRoBERTa (frozen) + MLP | 0.811 | 0.815 |
-| RuBioRoBERTa (файнтюн) | — | — |
+| RuBioRoBERTa (файнтюн, LoRA) | 0.851 | **0.853** |
 
 ## Запуск
 
