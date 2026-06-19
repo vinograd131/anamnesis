@@ -122,12 +122,13 @@ def train_once(
     weight_decay=0.01,
     warmup_ratio=0.1,
     patience=2,
+    max_length=256,
     output_dir="outputs/ft",
     save=False,
     trial=None,
 ):
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    train_ds, eval_ds, class_weights = prepare(eval_split, tokenizer)
+    train_ds, eval_ds, class_weights = prepare(eval_split, tokenizer, max_length)
 
     args = TrainingArguments(
         output_dir=output_dir,
@@ -189,6 +190,7 @@ def run_optuna(n_trials=20, eval_split="dev", use_lora=True):
             batch_size=trial.suggest_categorical("batch_size", [8, 16]),
             weight_decay=trial.suggest_float("weight_decay", 0.0, 0.1),
             warmup_ratio=trial.suggest_float("warmup_ratio", 0.0, 0.2),
+            max_length=128,
             output_dir=f"outputs/trial_{trial.number}",
             trial=trial,
         )
