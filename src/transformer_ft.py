@@ -104,6 +104,7 @@ def train_once(
     epochs=4,
     batch_size=8,
     weight_decay=0.01,
+    warmup_ratio=0.1,
     output_dir="outputs/ft",
     save=False,
 ):
@@ -118,6 +119,8 @@ def train_once(
         per_device_eval_batch_size=32,
         gradient_accumulation_steps=2,
         weight_decay=weight_decay,
+        warmup_ratio=warmup_ratio,
+        lr_scheduler_type="linear",
         eval_strategy="epoch",
         save_strategy="no",
         logging_steps=50,
@@ -158,6 +161,7 @@ def run_optuna(n_trials=20, eval_split="dev", use_lora=True):
             epochs=trial.suggest_int("epochs", 3, 6),
             batch_size=trial.suggest_categorical("batch_size", [8, 16]),
             weight_decay=trial.suggest_float("weight_decay", 0.0, 0.1),
+            warmup_ratio=trial.suggest_float("warmup_ratio", 0.0, 0.2),
             output_dir=f"outputs/trial_{trial.number}",
         )
 
