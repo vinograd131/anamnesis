@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "dev": {
+      "accuracy": 0.8546,
+      "macro_f1": 0.8405
+    }
+  },
+  "fasttext": {
+    "dev": {
+      "accuracy": 0.8331,
+      "macro_f1": 0.8217
+    }
+  },
+  "catboost": {
+    "dev": {
+      "accuracy": 0.8391,
+      "macro_f1": 0.8276
+    }
+  }
+}

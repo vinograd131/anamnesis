@@ -1,0 +1,12 @@
+numpy
+scipy
+scikit-learn
+gensim
+catboost
+pandas
+matplotlib
+seaborn
+jupyter
+pytest
+ruff
+black
