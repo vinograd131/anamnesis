@@ -59,13 +59,16 @@ def main(eval_split: str = "dev") -> None:
     x_tr = cached_embed("train", x_train, tokenizer, model, dev)
     x_ev = cached_embed(eval_split, x_eval, tokenizer, model, dev)
 
+    label2id = {g: i for i, g in enumerate(GROUPS)}
+    y_tr = [label2id[y] for y in y_train]
+
     clf = MLPClassifier(
         hidden_layer_sizes=(256,),
         max_iter=300,
         early_stopping=True,
         random_state=SEED,
-    ).fit(x_tr, y_train)
-    pred = clf.predict(x_ev)
+    ).fit(x_tr, y_tr)
+    pred = [GROUPS[i] for i in clf.predict(x_ev)]
 
     values = scores(y_eval, pred)
     print(f"{NAME} on {eval_split}: {values}")
