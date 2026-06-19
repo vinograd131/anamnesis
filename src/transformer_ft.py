@@ -165,7 +165,7 @@ def run_optuna(n_trials=20, eval_split="dev", use_lora=True):
             eval_split=eval_split,
             use_lora=use_lora,
             learning_rate=trial.suggest_float("learning_rate", 1e-5, 5e-4, log=True),
-            epochs=trial.suggest_int("epochs", 3, 6),
+            epochs=trial.suggest_int("epochs", 4, 10),
             batch_size=trial.suggest_categorical("batch_size", [8, 16]),
             weight_decay=trial.suggest_float("weight_decay", 0.0, 0.1),
             warmup_ratio=trial.suggest_float("warmup_ratio", 0.0, 0.2),
