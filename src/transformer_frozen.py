@@ -1,18 +1,18 @@
-"""RuBioRoBERTa без файнтюна: замороженные эмбеддинги (mean-pooling) + LogReg."""
+"""RuBioRoBERTa без файнтюна: замороженные эмбеддинги (mean-pooling) + MLP."""
 import argparse
 from pathlib import Path
 
 import joblib
 import numpy as np
 import torch
-from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
 from transformers import AutoModel, AutoTokenizer
 
 from .data import load_xy
 from .evaluate import print_report, save_confusion, save_metrics, scores
 from .mapping import GROUPS
 
-NAME = "rubioroberta_frozen"
+NAME = "rubioroberta_frozen_mlp"
 MODEL_ID = "alexyalunin/RuBioRoBERTa"
 MODELS = Path(__file__).resolve().parent.parent / "models"
 SEED = 42
@@ -39,7 +39,7 @@ def embed(texts, tokenizer, model, dev, batch_size=32, max_length=256) -> np.nda
 
 
 def cached_embed(split, texts, tokenizer, model, dev) -> np.ndarray:
-    path = MODELS / f"{NAME}_{split}.npy"
+    path = MODELS / f"rubioroberta_{split}.npy"
     if path.exists():
         return np.load(path)
     vecs = embed(texts, tokenizer, model, dev)
@@ -59,8 +59,11 @@ def main(eval_split: str = "dev") -> None:
     x_tr = cached_embed("train", x_train, tokenizer, model, dev)
     x_ev = cached_embed(eval_split, x_eval, tokenizer, model, dev)
 
-    clf = LogisticRegression(
-        max_iter=2000, C=10, class_weight="balanced", random_state=SEED
+    clf = MLPClassifier(
+        hidden_layer_sizes=(256,),
+        max_iter=300,
+        early_stopping=True,
+        random_state=SEED,
     ).fit(x_tr, y_train)
     pred = clf.predict(x_ev)
 
@@ -72,7 +75,7 @@ def main(eval_split: str = "dev") -> None:
     save_metrics(NAME, eval_split, values)
 
     MODELS.mkdir(exist_ok=True)
-    joblib.dump(clf, MODELS / f"{NAME}_clf.joblib")
+    joblib.dump(clf, MODELS / f"{NAME}.joblib")
 
 
 if __name__ == "__main__":
