@@ -10,6 +10,7 @@ from torch import nn
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    EarlyStoppingCallback,
     Trainer,
     TrainingArguments,
 )
@@ -100,11 +101,12 @@ def prepare(eval_split, tokenizer, max_length=256):
 def train_once(
     eval_split="dev",
     use_lora=True,
-    learning_rate=2e-5,
-    epochs=4,
+    learning_rate=2e-4,
+    epochs=10,
     batch_size=8,
     weight_decay=0.01,
     warmup_ratio=0.1,
+    patience=2,
     output_dir="outputs/ft",
     save=False,
 ):
@@ -122,7 +124,11 @@ def train_once(
         warmup_ratio=warmup_ratio,
         lr_scheduler_type="linear",
         eval_strategy="epoch",
-        save_strategy="no",
+        save_strategy="epoch",
+        save_total_limit=1,
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
         logging_steps=50,
         report_to="none",
         seed=SEED,
@@ -135,6 +141,7 @@ def train_once(
         train_dataset=train_ds,
         eval_dataset=eval_ds,
         compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=patience)],
     )
     trainer.train()
     metrics = trainer.evaluate()
