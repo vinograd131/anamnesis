@@ -23,7 +23,7 @@
 | tf-idf + LogReg | 0.855 | 0.841 |
 | CatBoost на fastText | 0.839 | 0.828 |
 | fastText + LogReg | 0.833 | 0.822 |
-| RuBioRoBERTa (frozen) + MLP | — | — |
+| RuBioRoBERTa (frozen) + MLP | 0.811 | 0.815 |
 | RuBioRoBERTa (файнтюн) | — | — |
 
 ## Запуск
