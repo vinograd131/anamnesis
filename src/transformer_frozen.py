@@ -9,7 +9,16 @@ from sklearn.neural_network import MLPClassifier
 from transformers import AutoModel, AutoTokenizer
 
 from .data import load_xy
-from .evaluate import print_report, save_confusion, save_metrics, save_report, scores
+from .evaluate import (
+    pr_auc,
+    print_dangerous_recall,
+    print_report,
+    save_confusion,
+    save_metrics,
+    save_pr_curves,
+    save_report,
+    scores,
+)
 from .mapping import GROUPS
 
 NAME = "rubioroberta_frozen_mlp"
@@ -69,12 +78,17 @@ def main(eval_split: str = "dev") -> None:
         random_state=SEED,
     ).fit(x_tr, y_tr)
     pred = [GROUPS[i] for i in clf.predict(x_ev)]
+    proba = clf.predict_proba(x_ev)
+    proba_labels = [GROUPS[c] for c in clf.classes_]
 
     values = scores(y_eval, pred)
+    values["pr_auc"], _ = pr_auc(y_eval, proba, proba_labels)
     print(f"{NAME} on {eval_split}: {values}")
     print_report(y_eval, pred, labels=list(GROUPS))
+    print_dangerous_recall(y_eval, pred)
 
     save_confusion(y_eval, pred, list(GROUPS), NAME, eval_split)
+    save_pr_curves(y_eval, proba, proba_labels, NAME, eval_split)
     save_report(NAME, eval_split, y_eval, pred, list(GROUPS))
     save_metrics(NAME, eval_split, values)
 

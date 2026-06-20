@@ -17,7 +17,16 @@ from transformers import (
 )
 
 from .data import load_xy
-from .evaluate import print_report, save_confusion, save_metrics, save_report, scores
+from .evaluate import (
+    pr_auc,
+    print_dangerous_recall,
+    print_report,
+    save_confusion,
+    save_metrics,
+    save_pr_curves,
+    save_report,
+    scores,
+)
 from .mapping import GROUPS
 
 NAME = "rubioroberta_ft"
@@ -170,16 +179,21 @@ def train_once(
         "accuracy": round(metrics["eval_accuracy"], 4),
         "macro_f1": round(metrics["eval_macro_f1"], 4),
     }
-    print(f"{NAME} on {eval_split}: {values}")
-    save_metrics(NAME, eval_split, values)
-
     if trial is None:
         pred = trainer.predict(eval_ds)
+        proba = _softmax(pred.predictions)
         y_pred = [GROUPS[i] for i in pred.predictions.argmax(-1)]
         y_true = [GROUPS[i] for i in pred.label_ids]
+        values["pr_auc"], _ = pr_auc(y_true, proba, list(GROUPS))
+        print(f"{NAME} on {eval_split}: {values}")
         print_report(y_true, y_pred, labels=list(GROUPS))
+        print_dangerous_recall(y_true, y_pred)
         save_confusion(y_true, y_pred, list(GROUPS), NAME, eval_split)
+        save_pr_curves(y_true, proba, list(GROUPS), NAME, eval_split)
         save_report(NAME, eval_split, y_true, y_pred, list(GROUPS))
+    else:
+        print(f"{NAME} on {eval_split}: {values}")
+    save_metrics(NAME, eval_split, values)
 
     if save:
         MODELS.mkdir(exist_ok=True)
@@ -187,17 +201,26 @@ def train_once(
     return values["macro_f1"]
 
 
+def _softmax(logits):
+    exp = np.exp(logits - logits.max(axis=1, keepdims=True))
+    return exp / exp.sum(axis=1, keepdims=True)
+
+
 @torch.no_grad()
-def _predict(model, tokenizer, texts, device, batch_size=32, max_length=256):
+def _predict_logits(model, tokenizer, texts, device, batch_size=32, max_length=256):
     model.eval().to(device)
-    preds = []
+    chunks = []
     for start in range(0, len(texts), batch_size):
         batch = texts[start : start + batch_size]
         enc = tokenizer(
             batch, padding=True, truncation=True, max_length=max_length, return_tensors="pt"
         ).to(device)
-        preds.extend(model(**enc).logits.argmax(-1).cpu().tolist())
-    return preds
+        chunks.append(model(**enc).logits.cpu().numpy())
+    return np.vstack(chunks)
+
+
+def _predict(model, tokenizer, texts, device, batch_size=32, max_length=256):
+    return _predict_logits(model, tokenizer, texts, device, batch_size, max_length).argmax(-1).tolist()
 
 
 def evaluate_saved(eval_split="test", adapter_dir=None, max_length=256):
@@ -212,12 +235,17 @@ def evaluate_saved(eval_split="test", adapter_dir=None, max_length=256):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     x_eval, y_eval = load_xy(eval_split)
-    y_pred = [GROUPS[i] for i in _predict(model, tokenizer, x_eval, device, max_length=max_length)]
+    logits = _predict_logits(model, tokenizer, x_eval, device, max_length=max_length)
+    proba = _softmax(logits)
+    y_pred = [GROUPS[i] for i in logits.argmax(-1)]
 
     values = scores(y_eval, y_pred)
+    values["pr_auc"], _ = pr_auc(y_eval, proba, list(GROUPS))
     print(f"{NAME} on {eval_split}: {values}")
     print_report(y_eval, y_pred, labels=list(GROUPS))
+    print_dangerous_recall(y_eval, y_pred)
     save_confusion(y_eval, y_pred, list(GROUPS), NAME, eval_split)
+    save_pr_curves(y_eval, proba, list(GROUPS), NAME, eval_split)
     save_report(NAME, eval_split, y_eval, y_pred, list(GROUPS))
     save_metrics(NAME, eval_split, values)
     return values["macro_f1"]

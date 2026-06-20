@@ -12,7 +12,16 @@ from transformers import (
 )
 
 from .data import load_xy
-from .evaluate import print_report, save_confusion, save_metrics, save_report, scores
+from .evaluate import (
+    pr_auc,
+    print_dangerous_recall,
+    print_report,
+    save_confusion,
+    save_metrics,
+    save_pr_curves,
+    save_report,
+    scores,
+)
 from .mapping import GROUPS
 from .transformer_ft import (
     ID2LABEL,
@@ -22,7 +31,8 @@ from .transformer_ft import (
     SEED,
     TextDataset,
     WeightedTrainer,
-    _predict,
+    _predict_logits,
+    _softmax,
     build_model,
     compute_metrics,
     encode,
@@ -97,15 +107,18 @@ def train(
         "accuracy": round(metrics["eval_accuracy"], 4),
         "macro_f1": round(metrics["eval_macro_f1"], 4),
     }
-    print(f"{name} on {eval_split}: {values}")
-    save_metrics(name, eval_split, values)
-
     pred = trainer.predict(eval_ds)
+    proba = _softmax(pred.predictions)
     y_pred = [GROUPS[i] for i in pred.predictions.argmax(-1)]
     y_true = [GROUPS[i] for i in pred.label_ids]
+    values["pr_auc"], _ = pr_auc(y_true, proba, list(GROUPS))
+    print(f"{name} on {eval_split}: {values}")
     print_report(y_true, y_pred, labels=list(GROUPS))
+    print_dangerous_recall(y_true, y_pred)
     save_confusion(y_true, y_pred, list(GROUPS), name, eval_split)
+    save_pr_curves(y_true, proba, list(GROUPS), name, eval_split)
     save_report(name, eval_split, y_true, y_pred, list(GROUPS))
+    save_metrics(name, eval_split, values)
 
     if save:
         MODELS.mkdir(exist_ok=True)
@@ -125,12 +138,17 @@ def evaluate_saved(eval_split="test", adapter_dir=None, max_length=256, name=NAM
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     x_eval, y_eval = load_xy(eval_split)
-    y_pred = [GROUPS[i] for i in _predict(model, tokenizer, x_eval, device, max_length=max_length)]
+    logits = _predict_logits(model, tokenizer, x_eval, device, max_length=max_length)
+    proba = _softmax(logits)
+    y_pred = [GROUPS[i] for i in logits.argmax(-1)]
 
     values = scores(y_eval, y_pred)
+    values["pr_auc"], _ = pr_auc(y_eval, proba, list(GROUPS))
     print(f"{name} on {eval_split}: {values}")
     print_report(y_eval, y_pred, labels=list(GROUPS))
+    print_dangerous_recall(y_eval, y_pred)
     save_confusion(y_eval, y_pred, list(GROUPS), name, eval_split)
+    save_pr_curves(y_eval, proba, list(GROUPS), name, eval_split)
     save_report(name, eval_split, y_eval, y_pred, list(GROUPS))
     save_metrics(name, eval_split, values)
     return values["macro_f1"]
