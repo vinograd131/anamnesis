@@ -11,8 +11,8 @@ REPORTS = Path(__file__).resolve().parent.parent / "reports"
 ORDER = ["rubioroberta_frozen_mlp", "fasttext", "catboost", "baseline", "rubioroberta_ft"]
 LABELS = {
     "baseline": "tf-idf\n+ LogReg",
-    "fasttext": "fastText",
-    "catboost": "CatBoost",
+    "fasttext": "fastText\n+ LogReg",
+    "catboost": "fastText\n+ CatBoost",
     "rubioroberta_frozen_mlp": "RuBioRoBERTa\nfrozen + MLP",
     "rubioroberta_ft": "RuBioRoBERTa\nфайнтюн",
 }
