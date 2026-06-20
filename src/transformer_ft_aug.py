@@ -56,6 +56,7 @@ def prepare(eval_split, tokenizer, max_length=256, train_split=TRAIN_SPLIT):
 def train(
     eval_split="dev",
     use_lora=True,
+    use_dora=False,
     learning_rate=0.0004939977445894489,
     epochs=8,
     batch_size=8,
@@ -94,7 +95,7 @@ def train(
     )
     trainer = WeightedTrainer(
         class_weights=class_weights,
-        model=build_model(use_lora),
+        model=build_model(use_lora, use_dora),
         args=args,
         train_dataset=train_ds,
         eval_dataset=eval_ds,

@@ -92,7 +92,7 @@ def encode(tokenizer, texts, max_length=128):
     return tokenizer(texts, padding=True, truncation=True, max_length=max_length, return_tensors="pt")
 
 
-def build_model(use_lora: bool):
+def build_model(use_lora: bool, use_dora: bool = False):
     model = AutoModelForSequenceClassification.from_pretrained(
         MODEL_ID, num_labels=len(GROUPS), id2label=ID2LABEL, label2id=LABEL2ID
     )
@@ -106,6 +106,7 @@ def build_model(use_lora: bool):
             lora_dropout=0.1,
             target_modules=["query", "value"],
             modules_to_save=["classifier"],
+            use_dora=use_dora,
         )
         model = get_peft_model(model, config)
     return model
