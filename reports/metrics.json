@@ -9,6 +9,11 @@
       "accuracy": 0.8596,
       "macro_f1": 0.8547,
       "pr_auc": 0.9077
+    },
+    "test_para": {
+      "accuracy": 0.6348,
+      "macro_f1": 0.5994,
+      "pr_auc": 0.6489
     }
   },
   "fasttext": {
@@ -54,7 +59,12 @@
     "test": {
       "accuracy": 0.8696,
       "macro_f1": 0.8653,
-      "pr_auc": 0.921
+      "pr_auc": 0.9209
+    },
+    "test_para": {
+      "accuracy": 0.795,
+      "macro_f1": 0.7737,
+      "pr_auc": 0.8476
     }
   },
   "rubioroberta_ft_aug": {
