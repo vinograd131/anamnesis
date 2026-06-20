@@ -4,10 +4,15 @@ import argparse
 import numpy as np
 import torch
 from sklearn.utils.class_weight import compute_class_weight
-from transformers import AutoTokenizer, EarlyStoppingCallback, TrainingArguments
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    EarlyStoppingCallback,
+    TrainingArguments,
+)
 
 from .data import load_xy
-from .evaluate import print_report, save_confusion, save_metrics, save_report
+from .evaluate import print_report, save_confusion, save_metrics, save_report, scores
 from .mapping import GROUPS
 from .transformer_ft import (
     ID2LABEL,
@@ -17,6 +22,7 @@ from .transformer_ft import (
     SEED,
     TextDataset,
     WeightedTrainer,
+    _predict,
     build_model,
     compute_metrics,
     encode,
@@ -102,6 +108,29 @@ def train(
     if save:
         MODELS.mkdir(exist_ok=True)
         trainer.save_model(str(MODELS / NAME))
+    return values["macro_f1"]
+
+
+def evaluate_saved(eval_split="test", adapter_dir=None, max_length=256):
+    from peft import PeftModel
+
+    adapter_dir = adapter_dir or str(MODELS / NAME)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    base = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_ID, num_labels=len(GROUPS), id2label=ID2LABEL, label2id=LABEL2ID
+    )
+    model = PeftModel.from_pretrained(base, adapter_dir)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    x_eval, y_eval = load_xy(eval_split)
+    y_pred = [GROUPS[i] for i in _predict(model, tokenizer, x_eval, device, max_length=max_length)]
+
+    values = scores(y_eval, y_pred)
+    print(f"{NAME} on {eval_split}: {values}")
+    print_report(y_eval, y_pred, labels=list(GROUPS))
+    save_confusion(y_eval, y_pred, list(GROUPS), NAME, eval_split)
+    save_report(NAME, eval_split, y_eval, y_pred, list(GROUPS))
+    save_metrics(NAME, eval_split, values)
     return values["macro_f1"]
 
 
