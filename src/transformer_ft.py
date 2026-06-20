@@ -17,7 +17,7 @@ from transformers import (
 )
 
 from .data import load_xy
-from .evaluate import save_metrics
+from .evaluate import print_report, save_confusion, save_metrics, save_report
 from .mapping import GROUPS
 
 NAME = "rubioroberta_ft"
@@ -172,6 +172,15 @@ def train_once(
     }
     print(f"{NAME} on {eval_split}: {values}")
     save_metrics(NAME, eval_split, values)
+
+    if trial is None:
+        pred = trainer.predict(eval_ds)
+        y_pred = [GROUPS[i] for i in pred.predictions.argmax(-1)]
+        y_true = [GROUPS[i] for i in pred.label_ids]
+        print_report(y_true, y_pred, labels=list(GROUPS))
+        save_confusion(y_true, y_pred, list(GROUPS), NAME, eval_split)
+        save_report(NAME, eval_split, y_true, y_pred, list(GROUPS))
+
     if save:
         MODELS.mkdir(exist_ok=True)
         trainer.save_model(str(MODELS / NAME))

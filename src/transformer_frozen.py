@@ -9,7 +9,7 @@ from sklearn.neural_network import MLPClassifier
 from transformers import AutoModel, AutoTokenizer
 
 from .data import load_xy
-from .evaluate import print_report, save_confusion, save_metrics, scores
+from .evaluate import print_report, save_confusion, save_metrics, save_report, scores
 from .mapping import GROUPS
 
 NAME = "rubioroberta_frozen_mlp"
@@ -75,6 +75,7 @@ def main(eval_split: str = "dev") -> None:
     print_report(y_eval, pred, labels=list(GROUPS))
 
     save_confusion(y_eval, pred, list(GROUPS), NAME, eval_split)
+    save_report(NAME, eval_split, y_eval, pred, list(GROUPS))
     save_metrics(NAME, eval_split, values)
 
     MODELS.mkdir(exist_ok=True)

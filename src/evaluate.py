@@ -26,6 +26,16 @@ def print_report(y_true, y_pred, labels=None) -> None:
     print(classification_report(y_true, y_pred, labels=labels, digits=3, zero_division=0))
 
 
+def save_report(name: str, split: str, y_true, y_pred, labels) -> Path:
+    REPORTS.mkdir(exist_ok=True)
+    report = classification_report(
+        y_true, y_pred, labels=labels, output_dict=True, zero_division=0
+    )
+    path = REPORTS / f"report_{name}_{split}.json"
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
 def save_confusion(y_true, y_pred, labels, name: str, split: str = "dev") -> Path:
     REPORTS.mkdir(exist_ok=True)
     cm = confusion_matrix(y_true, y_pred, labels=labels, normalize="true")
