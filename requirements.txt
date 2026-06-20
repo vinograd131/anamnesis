@@ -3,6 +3,7 @@ scipy
 scikit-learn
 gensim
 catboost
+mistralai
 pandas
 matplotlib
 seaborn
