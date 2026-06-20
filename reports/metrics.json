@@ -48,5 +48,11 @@
       "accuracy": 0.8696,
       "macro_f1": 0.8653
     }
+  },
+  "rubioroberta_ft_aug": {
+    "dev": {
+      "accuracy": 0.8725,
+      "macro_f1": 0.8721
+    }
   }
 }
