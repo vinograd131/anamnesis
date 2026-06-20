@@ -48,7 +48,12 @@ def paraphrase(client: Mistral, text: str, group: str, n: int, retries: int = 4)
     return []
 
 
-def main(target_per_class: int = 400, per_call: int = 5, delay: float = 1.0) -> None:
+def main(
+    target_per_class: int = 400,
+    per_call: int = 5,
+    delay: float = 1.0,
+    groups: list[str] | None = None,
+) -> None:
     client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
     rows = [r for r in load_split("train") if not is_dropped(r["code"])]
 
@@ -56,8 +61,11 @@ def main(target_per_class: int = 400, per_call: int = 5, delay: float = 1.0) -> 
     for r in rows:
         by_class[group_of(r["code"])].append(r)
 
+    targets = set(groups) if groups else None
     out_rows = list(rows)
     for group, items in sorted(by_class.items()):
+        if targets is not None and group not in targets:
+            continue
         need = target_per_class - len(items)
         if need <= 0:
             print(f"{group:18s} {len(items):4d} -> без аугментации")
@@ -87,5 +95,9 @@ if __name__ == "__main__":
     parser.add_argument("--target", type=int, default=400)
     parser.add_argument("--per-call", type=int, default=5)
     parser.add_argument("--delay", type=float, default=1.0)
+    parser.add_argument(
+        "--groups", default=None, help="список групп через запятую (по умолчанию — все мелкие)"
+    )
     args = parser.parse_args()
-    main(args.target, args.per_call, args.delay)
+    groups = [g.strip() for g in args.groups.split(",")] if args.groups else None
+    main(args.target, args.per_call, args.delay, groups)
