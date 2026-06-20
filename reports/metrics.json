@@ -42,7 +42,8 @@
     },
     "test": {
       "accuracy": 0.836,
-      "macro_f1": 0.8204
+      "macro_f1": 0.8204,
+      "pr_auc": 0.873
     }
   },
   "rubioroberta_ft": {
@@ -52,7 +53,8 @@
     },
     "test": {
       "accuracy": 0.8696,
-      "macro_f1": 0.8653
+      "macro_f1": 0.8653,
+      "pr_auc": 0.921
     }
   },
   "rubioroberta_ft_aug": {
