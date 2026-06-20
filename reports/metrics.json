@@ -3,18 +3,30 @@
     "dev": {
       "accuracy": 0.8546,
       "macro_f1": 0.8405
+    },
+    "test": {
+      "accuracy": 0.8596,
+      "macro_f1": 0.8547
     }
   },
   "fasttext": {
     "dev": {
       "accuracy": 0.8331,
       "macro_f1": 0.8217
+    },
+    "test": {
+      "accuracy": 0.8348,
+      "macro_f1": 0.8249
     }
   },
   "catboost": {
     "dev": {
       "accuracy": 0.8391,
       "macro_f1": 0.8276
+    },
+    "test": {
+      "accuracy": 0.8435,
+      "macro_f1": 0.8347
     }
   }
 }
