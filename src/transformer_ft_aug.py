@@ -32,8 +32,8 @@ NAME = "rubioroberta_ft_aug"
 TRAIN_SPLIT = "train_aug"
 
 
-def prepare(eval_split, tokenizer, max_length=256):
-    x_train, y_train = load_xy(TRAIN_SPLIT)
+def prepare(eval_split, tokenizer, max_length=256, train_split=TRAIN_SPLIT):
+    x_train, y_train = load_xy(train_split)
     x_eval, y_eval = load_xy(eval_split)
     y_train = [LABEL2ID[y] for y in y_train]
     y_eval = [LABEL2ID[y] for y in y_eval]
@@ -53,11 +53,13 @@ def train(
     warmup_ratio=0.02346078831477152,
     patience=2,
     max_length=256,
+    train_split=TRAIN_SPLIT,
+    name=NAME,
     output_dir="outputs/ft_aug",
     save=True,
 ):
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    train_ds, eval_ds, class_weights = prepare(eval_split, tokenizer, max_length)
+    train_ds, eval_ds, class_weights = prepare(eval_split, tokenizer, max_length, train_split)
 
     args = TrainingArguments(
         output_dir=output_dir,
@@ -95,26 +97,26 @@ def train(
         "accuracy": round(metrics["eval_accuracy"], 4),
         "macro_f1": round(metrics["eval_macro_f1"], 4),
     }
-    print(f"{NAME} on {eval_split}: {values}")
-    save_metrics(NAME, eval_split, values)
+    print(f"{name} on {eval_split}: {values}")
+    save_metrics(name, eval_split, values)
 
     pred = trainer.predict(eval_ds)
     y_pred = [GROUPS[i] for i in pred.predictions.argmax(-1)]
     y_true = [GROUPS[i] for i in pred.label_ids]
     print_report(y_true, y_pred, labels=list(GROUPS))
-    save_confusion(y_true, y_pred, list(GROUPS), NAME, eval_split)
-    save_report(NAME, eval_split, y_true, y_pred, list(GROUPS))
+    save_confusion(y_true, y_pred, list(GROUPS), name, eval_split)
+    save_report(name, eval_split, y_true, y_pred, list(GROUPS))
 
     if save:
         MODELS.mkdir(exist_ok=True)
-        trainer.save_model(str(MODELS / NAME))
+        trainer.save_model(str(MODELS / name))
     return values["macro_f1"]
 
 
-def evaluate_saved(eval_split="test", adapter_dir=None, max_length=256):
+def evaluate_saved(eval_split="test", adapter_dir=None, max_length=256, name=NAME):
     from peft import PeftModel
 
-    adapter_dir = adapter_dir or str(MODELS / NAME)
+    adapter_dir = adapter_dir or str(MODELS / name)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     base = AutoModelForSequenceClassification.from_pretrained(
         MODEL_ID, num_labels=len(GROUPS), id2label=ID2LABEL, label2id=LABEL2ID
@@ -126,11 +128,11 @@ def evaluate_saved(eval_split="test", adapter_dir=None, max_length=256):
     y_pred = [GROUPS[i] for i in _predict(model, tokenizer, x_eval, device, max_length=max_length)]
 
     values = scores(y_eval, y_pred)
-    print(f"{NAME} on {eval_split}: {values}")
+    print(f"{name} on {eval_split}: {values}")
     print_report(y_eval, y_pred, labels=list(GROUPS))
-    save_confusion(y_eval, y_pred, list(GROUPS), NAME, eval_split)
-    save_report(NAME, eval_split, y_eval, y_pred, list(GROUPS))
-    save_metrics(NAME, eval_split, values)
+    save_confusion(y_eval, y_pred, list(GROUPS), name, eval_split)
+    save_report(name, eval_split, y_eval, y_pred, list(GROUPS))
+    save_metrics(name, eval_split, values)
     return values["macro_f1"]
 
 
