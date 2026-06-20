@@ -68,8 +68,9 @@ def main(
             continue
         need = target_per_class - len(items)
         if need <= 0:
-            print(f"{group:18s} {len(items):4d} -> без аугментации")
+            print(f"{group:18s} {len(items):4d} -> без аугментации", flush=True)
             continue
+        print(f"{group:18s} {len(items):4d} -> генерирую +{need}...", flush=True)
         made, i = 0, 0
         while made < need:
             src = items[i % len(items)]
@@ -80,8 +81,8 @@ def main(
                 )
                 made += 1
             i += 1
+            print(f"  {group}: {made}/{need}", flush=True)
             time.sleep(delay)
-        print(f"{group:18s} {len(items):4d} -> +{need} = {target_per_class}")
 
     path = DATA_DIR / "train_aug_v1.jsonl"
     with open(path, "w", encoding="utf-8") as f:
