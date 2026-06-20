@@ -9,7 +9,16 @@ from gensim.models import FastText
 from sklearn.linear_model import LogisticRegression
 
 from .data import load_xy
-from .evaluate import print_report, save_confusion, save_metrics, save_report, scores
+from .evaluate import (
+    pr_auc,
+    print_dangerous_recall,
+    print_report,
+    save_confusion,
+    save_metrics,
+    save_pr_curves,
+    save_report,
+    scores,
+)
 from .mapping import GROUPS
 
 NAME = "fasttext"
@@ -63,12 +72,16 @@ def main(eval_split: str = "dev") -> None:
         max_iter=2000, C=10, class_weight="balanced", random_state=SEED
     ).fit(x_tr, y_train)
     pred = clf.predict(x_ev)
+    proba = clf.predict_proba(x_ev)
 
     values = scores(y_eval, pred)
+    values["pr_auc"], _ = pr_auc(y_eval, proba, clf.classes_)
     print(f"{NAME} on {eval_split}: {values}")
     print_report(y_eval, pred, labels=list(GROUPS))
+    print_dangerous_recall(y_eval, pred)
 
     save_confusion(y_eval, pred, list(GROUPS), NAME, eval_split)
+    save_pr_curves(y_eval, proba, clf.classes_, NAME, eval_split)
     save_report(NAME, eval_split, y_eval, pred, list(GROUPS))
     save_metrics(NAME, eval_split, values)
 

@@ -2,31 +2,37 @@
   "baseline": {
     "dev": {
       "accuracy": 0.8546,
-      "macro_f1": 0.8405
+      "macro_f1": 0.8405,
+      "pr_auc": 0.9137
     },
     "test": {
       "accuracy": 0.8596,
-      "macro_f1": 0.8547
+      "macro_f1": 0.8547,
+      "pr_auc": 0.9077
     }
   },
   "fasttext": {
     "dev": {
       "accuracy": 0.8331,
-      "macro_f1": 0.8217
+      "macro_f1": 0.8217,
+      "pr_auc": 0.8945
     },
     "test": {
       "accuracy": 0.8348,
-      "macro_f1": 0.8249
+      "macro_f1": 0.8249,
+      "pr_auc": 0.8876
     }
   },
   "catboost": {
     "dev": {
       "accuracy": 0.8391,
-      "macro_f1": 0.8276
+      "macro_f1": 0.8276,
+      "pr_auc": 0.8989
     },
     "test": {
       "accuracy": 0.8435,
-      "macro_f1": 0.8347
+      "macro_f1": 0.8347,
+      "pr_auc": 0.8994
     }
   },
   "rubioroberta_frozen_mlp": {

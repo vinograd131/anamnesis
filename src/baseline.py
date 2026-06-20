@@ -8,7 +8,16 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
 from .data import load_xy
-from .evaluate import print_report, save_confusion, save_metrics, save_report, scores
+from .evaluate import (
+    pr_auc,
+    print_dangerous_recall,
+    print_report,
+    save_confusion,
+    save_metrics,
+    save_pr_curves,
+    save_report,
+    scores,
+)
 from .mapping import GROUPS
 
 NAME = "baseline"
@@ -28,12 +37,16 @@ def main(eval_split: str = "dev") -> None:
 
     model = build_model().fit(x_train, y_train)
     pred = model.predict(x_eval)
+    proba = model.predict_proba(x_eval)
 
     values = scores(y_eval, pred)
+    values["pr_auc"], _ = pr_auc(y_eval, proba, model.classes_)
     print(f"{NAME} on {eval_split}: {values}")
     print_report(y_eval, pred, labels=list(GROUPS))
+    print_dangerous_recall(y_eval, pred)
 
     save_confusion(y_eval, pred, list(GROUPS), NAME, eval_split)
+    save_pr_curves(y_eval, proba, model.classes_, NAME, eval_split)
     save_report(NAME, eval_split, y_eval, pred, list(GROUPS))
     save_metrics(NAME, eval_split, values)
 
