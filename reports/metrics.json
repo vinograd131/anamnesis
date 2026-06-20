@@ -28,5 +28,25 @@
       "accuracy": 0.8435,
       "macro_f1": 0.8347
     }
+  },
+  "rubioroberta_frozen_mlp": {
+    "dev": {
+      "accuracy": 0.811,
+      "macro_f1": 0.815
+    },
+    "test": {
+      "accuracy": 0.836,
+      "macro_f1": 0.8204
+    }
+  },
+  "rubioroberta_ft": {
+    "dev": {
+      "accuracy": 0.8534,
+      "macro_f1": 0.854
+    },
+    "test": {
+      "accuracy": 0.8696,
+      "macro_f1": 0.8653
+    }
   }
 }
