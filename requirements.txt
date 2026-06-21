@@ -4,6 +4,9 @@ scikit-learn
 gensim
 catboost
 requests
+fastapi
+uvicorn[standard]
+httpx
 pandas
 matplotlib
 seaborn

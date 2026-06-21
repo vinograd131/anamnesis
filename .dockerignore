@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.idea/
+notebooks/
+reports/
+outputs/
+catboost_info/
+models/
+!models/rubioroberta_ft/
+tests/
+*.md
