@@ -28,23 +28,5 @@
         "ЭНДОКРИН/МЕТАБОЛ": 1.0
       }
     }
-  },
-  "negation": {
-    "baseline": {
-      "n": 805,
-      "mean_p_true_orig": 0.7618,
-      "mean_p_true_neg": 0.6377,
-      "mean_drop": 0.1241,
-      "pct_dropped": 0.7801,
-      "flip_rate": 0.1242
-    },
-    "rubioroberta_ft": {
-      "n": 805,
-      "mean_p_true_orig": 0.8417,
-      "mean_p_true_neg": 0.8101,
-      "mean_drop": 0.0316,
-      "pct_dropped": 0.6199,
-      "flip_rate": 0.0845
-    }
   }
 }

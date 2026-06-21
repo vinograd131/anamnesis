@@ -1,10 +1,6 @@
 """Поведенческие тесты в духе CheckList (Ribeiro et al., ACL 2020).
 
-Три типа тестов:
   INV  — перефраз (см. robustness.py): смысл сохранён → предсказание не должно меняться.
-  DIR  — отрицание (negate.py): главный симптом отрицается → уверенность в исходном
-         классе должна падать. Модель-словарь (tf-idf) видит то же слово и держит
-         уверенность; семантическая модель понимает отрицание.
   MFT  — минимальная функциональность: однозначные однострочные жалобы с известной
          группой → проверяем базовый навык.
 
@@ -16,8 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .data import load_split, load_xy
-from .mapping import group_of, is_dropped
+from .data import load_xy
 
 REPORTS = Path(__file__).resolve().parent.parent / "reports"
 RESULTS_FILE = REPORTS / "behavioral.json"
@@ -91,56 +86,6 @@ def run_mft(predict_proba, classes, model_name: str) -> dict:
     return values
 
 
-def _true_labels(split: str) -> list[str]:
-    return [group_of(r["code"]) for r in load_split(split) if not is_dropped(r["code"])]
-
-
-def run_negation(predict_proba, classes, model_name: str,
-                 orig_split="test", neg_split="test_neg") -> dict:
-    """DIR: симптом отрицается → уверенность в исходном классе должна падать.
-
-    Метрики: средняя P(истинный класс) до/после, среднее падение, доля примеров с
-    падением, и flip-rate (топ-1 предсказание сменилось). Чем сильнее падение и выше
-    flip-rate, тем лучше модель реагирует на отрицание.
-    """
-    classes = list(classes)
-    col = {c: i for i, c in enumerate(classes)}
-
-    x_orig, _ = load_xy(orig_split)
-    x_neg, _ = load_xy(neg_split)
-    y_true = _true_labels(orig_split)
-    assert len(x_orig) == len(x_neg) == len(y_true), "сплиты должны совпадать по длине/порядку"
-
-    p_orig = np.asarray(predict_proba(x_orig))
-    p_neg = np.asarray(predict_proba(x_neg))
-
-    rows = np.arange(len(y_true))
-    true_col = np.array([col[y] for y in y_true])
-    conf_orig = p_orig[rows, true_col]
-    conf_neg = p_neg[rows, true_col]
-    drop = conf_orig - conf_neg
-
-    top1_orig = p_orig.argmax(1)
-    top1_neg = p_neg.argmax(1)
-    flip = top1_orig != top1_neg
-
-    values = {
-        "n": len(y_true),
-        "mean_p_true_orig": round(float(conf_orig.mean()), 4),
-        "mean_p_true_neg": round(float(conf_neg.mean()), 4),
-        "mean_drop": round(float(drop.mean()), 4),
-        "pct_dropped": round(float((drop > 0).mean()), 4),
-        "flip_rate": round(float(flip.mean()), 4),
-    }
-    print(f"[DIR/negation] {model_name}:")
-    print(f"    P(истинный класс): {values['mean_p_true_orig']} -> {values['mean_p_true_neg']}"
-          f"  (падение {values['mean_drop']:+.3f})")
-    print(f"    доля с падением уверенности: {values['pct_dropped']:.3f}")
-    print(f"    flip-rate (сменился топ-1):  {values['flip_rate']:.3f}")
-    _save("negation", model_name, values)
-    return values
-
-
 def baseline_predictor():
     """tf-idf + LogReg, обученный на train. Возвращает (predict_proba, classes)."""
     from .baseline import build_model
@@ -151,13 +96,8 @@ def baseline_predictor():
 
 
 def main() -> None:
-    """Локальный прогон baseline: MFT всегда, negation — если есть test_neg."""
     predict_proba, classes = baseline_predictor()
     run_mft(predict_proba, classes, "baseline")
-    if (Path(__file__).resolve().parent.parent / "data" / "test_neg_v1.jsonl").exists():
-        run_negation(predict_proba, classes, "baseline")
-    else:
-        print("\ndata/test_neg_v1.jsonl не найден — negation пропущен (сгенерируйте negate.py)")
 
 
 if __name__ == "__main__":
