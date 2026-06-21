@@ -28,9 +28,11 @@ def test_drop_codes():
     assert is_dropped("D50")
     assert is_dropped("H65")
     assert is_dropped("Z00")
+    assert is_dropped("F41")
 
 
 def test_known_mappings():
     assert group_of("M54") == "ПОЗВОНОЧНИК"
     assert group_of("I11") == "КАРДИО+НЕВРО"
+    assert group_of("G20") == "КАРДИО+НЕВРО"
     assert not is_dropped("M54")
