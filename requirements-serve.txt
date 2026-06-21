@@ -4,4 +4,5 @@ pydantic
 transformers
 peft
 scikit-learn
+pymorphy3
 numpy

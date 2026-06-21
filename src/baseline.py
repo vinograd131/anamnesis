@@ -1,5 +1,10 @@
-"""Baseline: tf-idf + логистическая регрессия."""
+"""Baseline: tf-idf + логистическая регрессия.
+
+Тексты лемматизируются (pymorphy3): для русского флективного языка это схлопывает
+словоформы (болит/болела/боли -> болеть) и уменьшает разреженность tf-idf.
+"""
 import argparse
+import re
 from pathlib import Path
 
 import joblib
@@ -23,10 +28,31 @@ from .mapping import GROUPS
 NAME = "baseline"
 MODELS = Path(__file__).resolve().parent.parent / "models"
 
+_TOKEN = re.compile(r"[а-яёa-z]+")
+_morph = None
+_lemma_cache: dict[str, str] = {}
+
+
+def lemmatize(text: str) -> str:
+    """Нижний регистр + лемматизация токенов (с кэшем). Используется как preprocessor tf-idf."""
+    global _morph
+    if _morph is None:
+        import pymorphy3
+
+        _morph = pymorphy3.MorphAnalyzer()
+    out = []
+    for tok in _TOKEN.findall(text.lower()):
+        lem = _lemma_cache.get(tok)
+        if lem is None:
+            lem = _morph.parse(tok)[0].normal_form
+            _lemma_cache[tok] = lem
+        out.append(lem)
+    return " ".join(out)
+
 
 def build_model() -> Pipeline:
     return Pipeline([
-        ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=2)),
+        ("tfidf", TfidfVectorizer(preprocessor=lemmatize, ngram_range=(1, 2), min_df=2)),
         ("clf", LogisticRegression(max_iter=2000, C=10, class_weight="balanced")),
     ])
 

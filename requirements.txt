@@ -1,6 +1,7 @@
 numpy
 scipy
 scikit-learn
+pymorphy3
 gensim
 catboost
 requests
